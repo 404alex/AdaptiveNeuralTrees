@@ -44,6 +44,7 @@ echo ""
 echo "Installing other packages"
 conda install matplotlib==2.0.2
 conda install pandas==0.24.2
+pip install torchtext
 
 echo ""
 

@@ -141,6 +141,50 @@ def get_dataloaders(
             batch_size=1000,
             shuffle=False,
             **kwargs)
+    elif dataset == 'iot':
+        transform_train = transforms.Compose(
+            [
+                transforms.Resize((40, 40)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ],
+        )
+        transform_test = transforms.Compose(
+            [
+                transforms.Resize((40, 40)),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ],
+        )
+        train_data = datasets.ImageFolder(root="../img", transform=transform_train)
+        test_data = datasets.ImageFolder(root="../img", transform=transform_test)
+        val_data = datasets.ImageFolder(root="../img", transform=transform_test)
+
+        TOTAL_NUM = 550
+        NUM_VALID = 11
+        NUM_TRAIN = 539
+
+        train_loader = torch.utils.data.DataLoader(
+            train_data,
+            batch_size=batch_size,
+            sampler=ChunkSampler(NUM_TRAIN, 0, shuffle=True),
+            **kwargs)
+        valid_loader = torch.utils.data.DataLoader(
+            val_data,
+            batch_size=batch_size,
+            sampler=ChunkSampler(NUM_VALID, NUM_TRAIN, shuffle=True),
+            **kwargs)
+        test_loader = torch.utils.data.DataLoader(
+            test_data,
+            batch_size=100,
+            shuffle=False,
+            **kwargs)
+
+
+        # train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, **kwargs)
+        # test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size,  shuffle=False, **kwargs)
+        # valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size,  shuffle=True, **kwargs)
+
     else:
         raise NotImplementedError("Specified data set is not available.")
 
@@ -156,6 +200,11 @@ def get_dataset_details(dataset):
         classes = (
             'plane', 'car', 'bird', 'cat', 'deer',
             'dog', 'frog', 'horse', 'ship', 'truck',
+        )
+    elif dataset == 'iot':
+        input_nc, input_width, input_height = 3, 40, 40
+        classes = (
+            'benign_img', 'malicious_img'
         )
     else:
         raise NotImplementedError("Specified data set is not available.")
