@@ -376,6 +376,8 @@ def plot_accuracy(
 
         # choose est based on validation accuracy
         best_epoch_acc = records['valid_epoch_accuracy'].index(max(records['valid_epoch_accuracy']))
+        print(best_epoch_acc)
+        print(records['valid_epoch_accuracy'].index(max(records['valid_epoch_accuracy'])))
         print(model_names[i] + ': test accuracy = {}'.format(records['test_epoch_accuracy'][best_epoch_acc]))
         if finetune_position:
             plt.axvline(x=len(records['valid_epoch_loss'])-records['epochs_finetune'], color=color[i], linestyle='--')

@@ -142,27 +142,49 @@ def get_dataloaders(
             shuffle=False,
             **kwargs)
     elif dataset == 'iot':
-        transform_train = transforms.Compose(
-            [
-                transforms.Resize((40, 40)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            ],
-        )
-        transform_test = transforms.Compose(
-            [
-                transforms.Resize((40, 40)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-            ],
-        )
+        if augmentation_on:
+            transform_train = transforms.Compose(
+                [
+                    transforms.Resize((50, 50)),
+                    transforms.RandomCrop(50, padding=4),
+                    transforms.RandomHorizontalFlip(),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010),
+                    ),
+                ],
+            )
+            transform_test = transforms.Compose(
+                [
+                    transforms.Resize((50, 50)),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010),
+                    ),
+                ],
+            )
+        else:
+            transform_train = transforms.Compose(
+                [
+                    transforms.Resize((50, 50)),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                ],
+            )
+            transform_test = transforms.Compose(
+                [
+                    transforms.Resize((50, 50)),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                ],
+            )
         train_data = datasets.ImageFolder(root="../img", transform=transform_train)
         test_data = datasets.ImageFolder(root="../img", transform=transform_test)
         val_data = datasets.ImageFolder(root="../img", transform=transform_test)
 
-        TOTAL_NUM = 550
+        TOTAL_NUM = 551
         NUM_VALID = 11
-        NUM_TRAIN = 539
+        NUM_TRAIN = TOTAL_NUM - NUM_VALID
 
         train_loader = torch.utils.data.DataLoader(
             train_data,
@@ -176,7 +198,7 @@ def get_dataloaders(
             **kwargs)
         test_loader = torch.utils.data.DataLoader(
             test_data,
-            batch_size=100,
+            batch_size=256,
             shuffle=False,
             **kwargs)
 
@@ -202,7 +224,7 @@ def get_dataset_details(dataset):
             'dog', 'frog', 'horse', 'ship', 'truck',
         )
     elif dataset == 'iot':
-        input_nc, input_width, input_height = 3, 40, 40
+        input_nc, input_width, input_height = 3, 50, 50
         classes = (
             'benign_img', 'malicious_img'
         )
