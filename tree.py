@@ -110,6 +110,8 @@ records['test_best_accuracy'] = 0.0
 records['test_epoch_loss'] = []
 records['test_epoch_accuracy'] = []
 
+records['conf_matrix'] = []
+
 
 # -----------------------------  Data loaders ---------------------------------
 train_loader, valid_loader, test_loader, NUM_TRAIN, NUM_VALID = get_dataloaders(
@@ -119,6 +121,7 @@ train_loader, valid_loader, test_loader, NUM_TRAIN, NUM_VALID = get_dataloaders(
 args.input_nc, args.input_width, args.input_height, args.classes = \
     get_dataset_details(args.dataset)
 args.no_classes = len(args.classes)
+
 
 
 # -----------------------------  Components ----------------------------------
@@ -150,7 +153,7 @@ def train(model, data_loader, optimizer, node_idx):
             # show the interval-wise average loss:
             train_loss /= no_points
             records['train_loss'].append(train_loss)
-            records['train_nodes'].append(node_idx)
+            records['train_nodes'].appeprednd(node_idx)
 
             sys.stdout.flush()
             sys.stdout.write('\t      [{}/{} ({:.0f}%)]      Loss: {:.6f} \r'.
@@ -245,11 +248,20 @@ def valid(model, data_loader, node_idx, struct):
     return valid_epoch_loss
 
 
+def confusion_matrix(preds, labels, confs_matrix):
+    preds = torch.argmax(preds,1)
+    for p, t in zip(preds, labels):
+        confs_matrix[p,t]+=1
+    return confs_matrix
+
+
+
 def test(model, data_loader):
     """ Test step """
     model.eval()
     test_loss = 0
     correct = 0
+    conf_matrix = torch.zeros(len(args.classes), len(args.classes))
     for data, target in data_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
@@ -259,10 +271,13 @@ def test(model, data_loader):
         pred = output.data.max(1, keepdim=True)[1]
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
+        conf_matrix = confusion_matrix(output, target, conf_matrix)
+
     test_loss /= len(data_loader.dataset)
     test_accuracy = 100. * correct / len(data_loader.dataset)
     records['test_epoch_loss'].append(test_loss)
     records['test_epoch_accuracy'].append(test_accuracy)
+    records['conf_matrix'].append(conf_matrix.numpy())
 
     if test_loss < records['test_best_loss']:
         records['test_best_loss'] = test_loss

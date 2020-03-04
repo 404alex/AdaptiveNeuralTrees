@@ -145,7 +145,7 @@ def get_dataloaders(
         if augmentation_on:
             transform_train = transforms.Compose(
                 [
-                    transforms.Resize((50, 50)),
+                    transforms.Resize((40, 40)),
                     transforms.RandomCrop(50, padding=4),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
@@ -156,7 +156,7 @@ def get_dataloaders(
             )
             transform_test = transforms.Compose(
                 [
-                    transforms.Resize((50, 50)),
+                    transforms.Resize((40, 40)),
                     transforms.ToTensor(),
                     transforms.Normalize(
                         (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010),
@@ -166,14 +166,14 @@ def get_dataloaders(
         else:
             transform_train = transforms.Compose(
                 [
-                    transforms.Resize((50, 50)),
+                    transforms.Resize((40, 40)),
                     transforms.ToTensor(),
                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 ],
             )
             transform_test = transforms.Compose(
                 [
-                    transforms.Resize((50, 50)),
+                    transforms.Resize((40, 40)),
                     transforms.ToTensor(),
                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 ],
@@ -224,7 +224,7 @@ def get_dataset_details(dataset):
             'dog', 'frog', 'horse', 'ship', 'truck',
         )
     elif dataset == 'iot':
-        input_nc, input_width, input_height = 3, 50, 50
+        input_nc, input_width, input_height = 3, 40, 40
         classes = (
             'benign_img', 'malicious_img'
         )
