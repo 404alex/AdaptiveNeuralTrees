@@ -123,7 +123,6 @@ args.input_nc, args.input_width, args.input_height, args.classes = \
 args.no_classes = len(args.classes)
 
 
-
 # -----------------------------  Components ----------------------------------
 def train(model, data_loader, optimizer, node_idx):
     """ Train step"""
@@ -249,7 +248,6 @@ def valid(model, data_loader, node_idx, struct):
 
 
 def confusion_matrix(preds, labels, confs_matrix):
-    preds = torch.argmax(preds,1)
     for p, t in zip(preds, labels):
         confs_matrix[p,t]+=1
     return confs_matrix
@@ -271,7 +269,7 @@ def test(model, data_loader):
         pred = output.data.max(1, keepdim=True)[1]
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
-        conf_matrix = confusion_matrix(output, target, conf_matrix)
+        conf_matrix = confusion_matrix(torch.max(output, 1)[1], target, conf_matrix)
 
     test_loss /= len(data_loader.dataset)
     test_accuracy = 100. * correct / len(data_loader.dataset)
