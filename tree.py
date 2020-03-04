@@ -153,7 +153,7 @@ def train(model, data_loader, optimizer, node_idx):
             # show the interval-wise average loss:
             train_loss /= no_points
             records['train_loss'].append(train_loss)
-            records['train_nodes'].appeprednd(node_idx)
+            records['train_nodes'].append(node_idx)
 
             sys.stdout.flush()
             sys.stdout.write('\t      [{}/{} ({:.0f}%)]      Loss: {:.6f} \r'.
