@@ -249,7 +249,8 @@ def valid(model, data_loader, node_idx, struct):
 
 def confusion_matrix(preds, labels, confs_matrix):
     for p, t in zip(preds, labels):
-        confs_matrix[p,t]+=1
+        indices = np.array([p,t], dtype=np.int64)
+        confs_matrix[indices]+=1
     return confs_matrix
 
 
@@ -275,7 +276,7 @@ def test(model, data_loader):
     test_accuracy = 100. * correct / len(data_loader.dataset)
     records['test_epoch_loss'].append(test_loss)
     records['test_epoch_accuracy'].append(test_accuracy)
-    records['conf_matrix'].append(conf_matrix.numpy())
+    records['conf_matrix'].append(conf_matrix.numpy().tolist())
 
     if test_loss < records['test_best_loss']:
         records['test_best_loss'] = test_loss

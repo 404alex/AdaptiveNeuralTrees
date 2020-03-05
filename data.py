@@ -146,7 +146,7 @@ def get_dataloaders(
             transform_train = transforms.Compose(
                 [
                     transforms.Resize((40, 40)),
-                    transforms.RandomCrop(50, padding=4),
+                    transforms.RandomCrop(40, padding=4),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
                     transforms.Normalize(
