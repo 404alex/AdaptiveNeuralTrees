@@ -247,10 +247,11 @@ def valid(model, data_loader, node_idx, struct):
     return valid_epoch_loss
 
 
-def confusion_matrix(preds, labels, confs_matrix):
+def confusion_matrix(preds, labels, confs_matrix, length):
     for p, t in zip(preds, labels):
-        indices = np.array([p,t], dtype=np.int64)
-        confs_matrix[indices]+=1
+        if p.long().data[0] < length and t.long().data[0] < length:
+            indices = np.array([p,t], dtype=np.int64)
+            confs_matrix[indices]+=1
     return confs_matrix
 
 
@@ -270,7 +271,7 @@ def test(model, data_loader):
         pred = output.data.max(1, keepdim=True)[1]
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
-        conf_matrix = confusion_matrix(torch.max(output, 1)[1], target, conf_matrix)
+        conf_matrix = confusion_matrix(torch.max(output, 1)[1], target, conf_matrix, len(args.classes))
 
     test_loss /= len(data_loader.dataset)
     test_accuracy = 100. * correct / len(data_loader.dataset)
