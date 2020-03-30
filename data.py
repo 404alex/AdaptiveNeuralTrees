@@ -3,6 +3,47 @@ import torch
 import torchvision
 from torchvision import datasets, transforms
 from ops import ChunkSampler
+import numpy as np
+from torch.utils import data as tu
+from torch._utils import _accumulate
+from torch import randperm
+
+
+class Subset(tu.Dataset):
+    r"""
+    Subset of a dataset at specified indices.
+
+    Arguments:
+        dataset (Dataset): The whole Dataset
+        indices (sequence): Indices in the whole set selected for subset
+    """
+    def __init__(self, dataset, indices):
+        self.dataset = dataset
+        self.indices = indices
+
+    def __getitem__(self, idx):
+        return self.dataset[self.indices[idx]]
+
+    def __len__(self):
+        return len(self.indices)
+
+
+
+
+def random_split(dataset, lengths):
+    r"""
+    Randomly split a dataset into non-overlapping new datasets of given lengths.
+
+    Arguments:
+        dataset (Dataset): Dataset to be split
+        lengths (sequence): lengths of splits to be produced
+    """
+    if sum(lengths) != len(dataset):
+        raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
+
+    indices = randperm(sum(lengths)).tolist()
+    return [Subset(dataset, indices[offset - length:offset]) for offset, length in
+            zip(_accumulate(lengths), lengths)]
 
 
 def get_dataloaders(
@@ -202,11 +243,59 @@ def get_dataloaders(
             shuffle=False,
             **kwargs)
 
-
         # train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, **kwargs)
         # test_loader = torch.utils.data.DataLoader(test_data, batch_size=batch_size,  shuffle=False, **kwargs)
         # valid_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size,  shuffle=True, **kwargs)
 
+    elif dataset == 'batadal':
+        filename = '../data/ICS/BATADAL/Physical_BATADAL.npy'
+        data = np.load(filename, allow_pickle=True)
+        datalen = len(data[0])
+        X = data[:, 1:datalen - 2]
+        y = data[:, datalen - 1]
+        re_X = []
+        for item in X:
+            z = np.zeros(6)
+            item = np.concatenate((item, z), axis=0)
+            temp = np.reshape(item, (1, 7, 7)).tolist()
+            re_X.append(np.array(temp))
+        re_y = []
+        for item in y:
+            if item == 'Normal':
+                temp = 0
+            else:
+                temp = 1
+            re_y.append(temp)
+
+        tensor_x = torch.Tensor(re_X)
+        tensor_y = torch.Tensor(re_y).long()
+
+        all_dataset = tu.TensorDataset(tensor_x, tensor_y)
+        total_num = len(y)
+        test_num = int(round(total_num * 0.1))
+        train_num = total_num - test_num
+        tran_set, test_set = random_split(all_dataset, [train_num, test_num])
+
+        TOTAL_NUM = len(tran_set)
+        NUM_VALID = int(round(TOTAL_NUM * 0.02))
+        NUM_TRAIN = TOTAL_NUM - NUM_VALID
+
+        train_loader = torch.utils.data.DataLoader(
+            tran_set,
+            batch_size=batch_size,
+
+            sampler=ChunkSampler(NUM_TRAIN, 0, shuffle=True),
+            **kwargs)
+        valid_loader = torch.utils.data.DataLoader(
+            tran_set,
+            batch_size=batch_size,
+            sampler=ChunkSampler(NUM_VALID, NUM_TRAIN, shuffle=True),
+            **kwargs)
+        test_loader = torch.utils.data.DataLoader(
+            test_set,
+            batch_size=test_num,
+            shuffle=False,
+            **kwargs)
     else:
         raise NotImplementedError("Specified data set is not available.")
 
@@ -227,6 +316,11 @@ def get_dataset_details(dataset):
         input_nc, input_width, input_height = 3, 40, 40
         classes = (
             'benign_img', 'malicious_img'
+        )
+    elif dataset == 'batadal':
+        input_nc, input_width, input_height = 1, 7, 7
+        classes = (
+            'Normal', 'Attack'
         )
     else:
         raise NotImplementedError("Specified data set is not available.")
