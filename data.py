@@ -3,30 +3,14 @@ import torch
 import torchvision
 from torchvision import datasets, transforms
 from ops import ChunkSampler
+from imbalanced import ImbalancedDatasetSampler
 import numpy as np
 from torch.utils import data as tu
 from torch._utils import _accumulate
 from torch import randperm
 from sklearn.preprocessing import normalize
+from helper import Subset
 
-
-class Subset(tu.Dataset):
-    r"""
-    Subset of a dataset at specified indices.
-
-    Arguments:
-        dataset (Dataset): The whole Dataset
-        indices (sequence): Indices in the whole set selected for subset
-    """
-    def __init__(self, dataset, indices):
-        self.dataset = dataset
-        self.indices = indices
-
-    def __getitem__(self, idx):
-        return self.dataset[self.indices[idx]]
-
-    def __len__(self):
-        return len(self.indices)
 
 
 
@@ -275,23 +259,23 @@ def get_dataloaders(
         all_dataset = tu.TensorDataset(tensor_x, tensor_y)
         total_num = len(y)
         test_num = int(round(total_num * 0.1))
-        train_num = total_num - test_num
-        tran_set, test_set = random_split(all_dataset, [train_num, test_num])
+        train_num = total_num - test_num * 2
+        tran_set, test_set, val_set = random_split(all_dataset, [train_num, test_num, test_num])
 
-        TOTAL_NUM = len(tran_set)
-        NUM_VALID = int(round(TOTAL_NUM * 0.02))
-        NUM_TRAIN = TOTAL_NUM - NUM_VALID
+
+        NUM_VALID = len(val_set)
+        NUM_TRAIN = len(tran_set)
 
         train_loader = torch.utils.data.DataLoader(
             tran_set,
             batch_size=batch_size,
 
-            sampler=ChunkSampler(NUM_TRAIN, 0, shuffle=True),
+            sampler=ImbalancedDatasetSampler(tran_set),
             **kwargs)
         valid_loader = torch.utils.data.DataLoader(
-            tran_set,
+            val_set,
             batch_size=batch_size,
-            sampler=ChunkSampler(NUM_VALID, NUM_TRAIN, shuffle=True),
+            sampler=ImbalancedDatasetSampler(val_set),
             **kwargs)
         test_loader = torch.utils.data.DataLoader(
             test_set,
