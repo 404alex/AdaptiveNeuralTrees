@@ -13,8 +13,6 @@ from helper import Subset
 
 
 
-
-
 def random_split(dataset, lengths):
     r"""
     Randomly split a dataset into non-overlapping new datasets of given lengths.
@@ -237,7 +235,7 @@ def get_dataloaders(
         data = np.load(filename, allow_pickle=True)
         datalen = len(data[0])
         X = data[:, 1:datalen - 2]
-        X = normalize(X)
+        X = normalize(X, axis=0)
         y = data[:, datalen - 1]
         re_X = []
         for item in X:
@@ -258,9 +256,9 @@ def get_dataloaders(
 
         all_dataset = tu.TensorDataset(tensor_x, tensor_y)
         total_num = len(y)
-        test_num = int(round(total_num * 0.1))
-        train_num = total_num - test_num * 2
-        tran_set, test_set, val_set = random_split(all_dataset, [train_num, test_num, test_num])
+        val_num = int(round(total_num * 0.2))
+        train_num = total_num - val_num - 4000
+        tran_set, test_set, val_set = random_split(all_dataset, [train_num, 4000, val_num])
 
 
         NUM_VALID = len(val_set)
@@ -279,9 +277,61 @@ def get_dataloaders(
             **kwargs)
         test_loader = torch.utils.data.DataLoader(
             test_set,
-            batch_size=test_num,
+            batch_size=4000,
             shuffle=False,
             **kwargs)
+
+    elif dataset == 'wadi':
+        filename = '../data/ICS/WADI/Physical_WADI.npy'
+        data = np.load(filename, allow_pickle=True)
+        datalen = len(data[0])
+        X = data[:, 3:datalen - 2]
+        X = normalize(X, axis=0)
+        y = data[:, datalen - 1]
+        re_X = []
+        for item in X:
+            z = np.zeros(22)
+            item = np.concatenate((item, z), axis=0)
+            temp = np.reshape(item, (1, 12, 12)).tolist()
+            re_X.append(np.array(temp))
+        re_y = []
+        for item in y:
+            if item == 'Normal':
+                temp = 0
+            else:
+                temp = 1
+            re_y.append(temp)
+
+        tensor_x = torch.Tensor(re_X)
+        tensor_y = torch.Tensor(re_y).long()
+
+        all_dataset = tu.TensorDataset(tensor_x, tensor_y)
+        total_num = len(y)
+        val_num = int(round(total_num * 0.2))
+        train_num = total_num - val_num - val_num
+        tran_set, test_set, val_set = random_split(all_dataset, [train_num, val_num, val_num])
+
+
+        NUM_VALID = len(val_set)
+        NUM_TRAIN = len(tran_set)
+
+        train_loader = torch.utils.data.DataLoader(
+            tran_set,
+            batch_size=batch_size,
+            sampler=ImbalancedDatasetSampler(tran_set),
+            **kwargs)
+        valid_loader = torch.utils.data.DataLoader(
+            val_set,
+            batch_size=batch_size,
+            sampler=ImbalancedDatasetSampler(val_set),
+            **kwargs)
+        test_loader = torch.utils.data.DataLoader(
+            test_set,
+            batch_size=val_num,
+            shuffle=False,
+            **kwargs)
+
+
     else:
         raise NotImplementedError("Specified data set is not available.")
 
@@ -305,6 +355,11 @@ def get_dataset_details(dataset):
         )
     elif dataset == 'batadal':
         input_nc, input_width, input_height = 1, 7, 7
+        classes = (
+            'Normal', 'Attack'
+        )
+    elif dataset == 'wadi':
+        input_nc, input_width, input_height = 1, 12, 12
         classes = (
             'Normal', 'Attack'
         )
