@@ -7,6 +7,7 @@ import numpy as np
 from torch.utils import data as tu
 from torch._utils import _accumulate
 from torch import randperm
+from sklearn.preprocessing import normalize
 
 
 class Subset(tu.Dataset):
@@ -252,6 +253,7 @@ def get_dataloaders(
         data = np.load(filename, allow_pickle=True)
         datalen = len(data[0])
         X = data[:, 1:datalen - 2]
+        X = normalize(X)
         y = data[:, datalen - 1]
         re_X = []
         for item in X:
