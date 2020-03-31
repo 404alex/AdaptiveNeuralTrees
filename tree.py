@@ -140,8 +140,8 @@ def train(model, data_loader, optimizer, node_idx):
         y_pred, p_out = model(x)
 
         loss = F.nll_loss(y_pred, y)
-        train_epoch_loss += loss.data[0] * y.size(0)
-        train_loss += loss.data[0] * y.size(0)
+        train_epoch_loss += loss.item() * y.size(0)
+        train_loss += loss.item() * y.size(0)
         loss.backward()
         optimizer.step()
 
@@ -186,13 +186,13 @@ def valid(model, data_loader, node_idx, struct):
         # sum up batch loss
         valid_epoch_loss += F.nll_loss(
             output, target, size_average=False,
-        ).data[0]
+        ).item()
 
         pred = output.data.max(1, keepdim=True)[1]
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
     valid_epoch_loss /= NUM_VALID
-    valid_epoch_accuracy = 100. * correct / NUM_VALID
+    valid_epoch_accuracy = 100. * correct.item() / NUM_VALID
     records['valid_epoch_loss'].append(valid_epoch_loss)
     records['valid_epoch_accuracy'].append(valid_epoch_accuracy)
 
@@ -249,7 +249,7 @@ def valid(model, data_loader, node_idx, struct):
 
 def confusion_matrix(preds, labels, confs_matrix, length):
     for p, t in zip(preds, labels):
-        if p.long().data[0] < length and t.long().data[0] < length:
+        if p.long().item() < length and t.long().item() < length:
             indices = np.array([p,t], dtype=np.int64)
             confs_matrix[indices]+=1
     return confs_matrix
@@ -267,14 +267,14 @@ def test(model, data_loader):
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data, volatile=True), Variable(target)
         output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).data[0]
+        test_loss += F.nll_loss(output, target, size_average=False).item()
         pred = output.data.max(1, keepdim=True)[1]
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
         conf_matrix = confusion_matrix(torch.max(output, 1)[1], target, conf_matrix, len(args.classes))
 
     test_loss /= len(data_loader.dataset)
-    test_accuracy = 100. * correct / len(data_loader.dataset)
+    test_accuracy = 100. * correct.item() / len(data_loader.dataset)
     records['test_epoch_loss'].append(test_loss)
     records['test_epoch_accuracy'].append(test_accuracy)
     records['conf_matrix'].append(conf_matrix.numpy().tolist())

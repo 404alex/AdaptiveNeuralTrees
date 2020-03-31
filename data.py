@@ -9,7 +9,6 @@ from torch.utils import data as tu
 from torch._utils import _accumulate
 from torch import randperm
 from sklearn.preprocessing import normalize
-from helper import Subset
 
 
 
@@ -25,7 +24,7 @@ def random_split(dataset, lengths):
         raise ValueError("Sum of input lengths does not equal the length of the input dataset!")
 
     indices = randperm(sum(lengths)).tolist()
-    return [Subset(dataset, indices[offset - length:offset]) for offset, length in
+    return [tu.Subset(dataset, indices[offset - length:offset]) for offset, length in
             zip(_accumulate(lengths), lengths)]
 
 

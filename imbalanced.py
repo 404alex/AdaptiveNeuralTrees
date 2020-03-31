@@ -1,7 +1,7 @@
 import torch
 import torch.utils.data
 import torchvision
-from helper import Subset
+from torch.utils import data as tu
 
 
 class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
@@ -48,8 +48,8 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
             return dataset.imgs[idx][1]
         elif self.callback_get_label:
             return self.callback_get_label(dataset, idx)
-        elif isinstance(dataset, Subset):
-            return dataset.dataset.target_tensor[dataset.indices[idx]]
+        elif isinstance(dataset, tu.Subset):
+            return dataset[idx][1].item()
         else:
             raise NotImplementedError
 

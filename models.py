@@ -973,8 +973,8 @@ class Solver_GAP_TwoFClayers(nn.Module):
         self.dropout_prob = dropout_prob
         self.reduction_rate = reduction_rate
 
-        self.fc1 = nn.Linear(input_nc, input_nc/reduction_rate + 1)
-        self.fc2 = nn.Linear(input_nc/reduction_rate + 1, 10)
+        self.fc1 = nn.Linear(input_nc, int(input_nc/reduction_rate + 1))
+        self.fc2 = nn.Linear(int(input_nc/reduction_rate + 1), 10)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
