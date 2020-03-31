@@ -235,7 +235,7 @@ def get_dataloaders(
         data = np.load(filename, allow_pickle=True)
         datalen = len(data[0])
         X = data[:, 1:datalen - 2]
-        X = normalize(X, axis=0)
+        #X = normalize(X, axis=0)
         y = data[:, datalen - 1]
         re_X = []
         for item in X:
@@ -278,6 +278,7 @@ def get_dataloaders(
         test_loader = torch.utils.data.DataLoader(
             test_set,
             batch_size=2000,
+            sampler=ImbalancedDatasetSampler(test_set),
             shuffle=False,
             **kwargs)
 
