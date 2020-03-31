@@ -10,6 +10,7 @@ from ops import get_leaf_nodes, get_past_leaf_nodes, get_path_to_root
 
 class Tree(nn.Module):
     """ Adaptive Neural Tree module. """
+
     def __init__(self,
                  tree_struct, tree_modules,
                  split=False,
@@ -60,7 +61,7 @@ class Tree(nn.Module):
         """
         super(Tree, self).__init__()
 
-        assert not(split and extend)  # the node can only be split or extended
+        assert not (split and extend)  # the node can only be split or extended
         self.soft_decision = soft_decision
         self.cuda_on = cuda_on
         self.split = split
@@ -99,7 +100,7 @@ class Tree(nn.Module):
             self.child_right.add_module('transform', child_right["transform"])
             self.child_right.add_module('classifier', child_right["classifier"])
             self.child_right.add_module('router', child_right["router"])
-        
+
         # case (2): making deeper
         if extend:
             self.child_extension = nn.Sequential()
@@ -130,7 +131,7 @@ class Tree(nn.Module):
                 the last node.
         """
         y_pred = 0.0
-        prob_last = None 
+        prob_last = None
 
         for (nodes, edges) in self.paths_list:
             # split the node and perform prediction
@@ -142,7 +143,7 @@ class Tree(nn.Module):
                 y_pred += y_tmp
             else:
                 y_pred += self.node_pred(input, nodes, edges)
-        
+
         if self.training:
             return torch.log(1e-10 + y_pred), prob_last
         else:
@@ -169,7 +170,7 @@ class Tree(nn.Module):
             if self.split and node['index'] == self.node_split:
                 s_list.append(self.child_left.classifier(self.child_left.transform(inp)))
                 s_list.append(self.child_right.classifier(self.child_right.transform(inp)))
-            
+
                 p_left = self.tree_modules[node['index']].router(inp)
                 p_left = torch.unsqueeze(p_left, 1)
                 prob_last = p_left
@@ -178,12 +179,12 @@ class Tree(nn.Module):
                 r_list.append(ro * (1.0 - p_left))
 
             elif self.extend and node['index'] == self.node_extend:
-                s_list.append(self.child_extension.classifier(self.child_extension.transform(inp)))          
+                s_list.append(self.child_extension.classifier(self.child_extension.transform(inp)))
                 p_left = 1.0
                 r_list.append(ro * p_left)
-            
+
             # if the node is a leaf node,
-            elif node['is_leaf']: 
+            elif node['is_leaf']:
                 s_list.append(self.tree_modules[node['index']].classifier(inp))
                 r_list.append(ro)
             elif node['extended']:
@@ -282,7 +283,7 @@ class Tree(nn.Module):
         y_pred = prob * (prob_last * torch.exp(
             self.child_left.classifier(self.child_left.transform(input)))
                          + (1.0 - prob_last) * torch.exp(
-            self.child_right.classifier(self.child_right.transform(input)))
+                    self.child_right.classifier(self.child_right.transform(input)))
                          )
         return y_pred, prob_last
 
@@ -352,7 +353,7 @@ class Tree(nn.Module):
                 node_final = nodes[-1]
                 input = self.tree_modules[node_final].transform(input)
                 prob_last = torch.unsqueeze(self.tree_modules[node_final].router(input), 1)
-                prob = torch.cat((prob_last*prob, (1.0-prob_last)*prob), dim=1)
+                prob = torch.cat((prob_last * prob, (1.0 - prob_last) * prob), dim=1)
 
             # concatenate
             if i == 0:
@@ -365,8 +366,8 @@ class Tree(nn.Module):
     def compute_routing_probability_specificnode(self, input, node_idx):
         """ Compute the probability of reaching a selected node.
         If a batch is provided, then the sum of probabilities is computed.
-        """ 
-        
+        """
+
         nodes, edges = get_path_to_root(node_idx, self.tree_struct)
         prob = 1.0
 
@@ -382,7 +383,7 @@ class Tree(nn.Module):
             prob_sum = prob.sum(dim=0)
             return prob_sum.data[0]
         else:
-            return prob*input.size(0)
+            return prob * input.size(0)
 
     def compute_routing_probabilities_uptonode(self, input, node_idx):
         """ Compute the routing probabilities up to a node.
@@ -400,7 +401,7 @@ class Tree(nn.Module):
         # (nodes, edges) which contains these two lists.
         paths_list_up_to_node = [get_path_to_root(i, self.tree_struct)
                                  for i in leaves_up_to_node]
-        
+
         for i, (nodes, edges) in enumerate(paths_list_up_to_node):
             # compute probabilities for the given branch
             # if len(nodes)>1:
@@ -426,7 +427,7 @@ class Tree(nn.Module):
                 output = self.tree_modules[node_final].transform(output)
                 prob_last = torch.unsqueeze(
                     self.tree_modules[node_final].router(output), 1)
-                prob = torch.cat((prob_last*prob, (1.0-prob_last)*prob), dim=1)
+                prob = torch.cat((prob_last * prob, (1.0 - prob_last) * prob), dim=1)
 
             # concatenate
             if i == 0:
@@ -440,10 +441,10 @@ class Tree(nn.Module):
         """
         Return tree_modules (list) with the current parameters.
         """
-        tree_modules_new=[]
+        tree_modules_new = []
         for node_module in self.tree_modules:
-            node = {'transform' :node_module.transform,
-                    'classifier':node_module.classifier,
+            node = {'transform': node_module.transform,
+                    'classifier': node_module.classifier,
                     'router': node_module.router}
             tree_modules_new.append(node)
         return tree_modules_new
@@ -451,18 +452,18 @@ class Tree(nn.Module):
     def update_children(self):
         assert self.split or self.extend
         if self.split:
-            child_left= {'transform' : self.child_left.transform,
-                        'classifier': self.child_left.classifier,
-                        'router': self.child_left.router}
-            child_right= {'transform' :self.child_right.transform,
-                        'classifier':self.child_right.classifier,
-                        'router': self.child_right.router}
+            child_left = {'transform': self.child_left.transform,
+                          'classifier': self.child_left.classifier,
+                          'router': self.child_left.router}
+            child_right = {'transform': self.child_right.transform,
+                           'classifier': self.child_right.classifier,
+                           'router': self.child_right.router}
             print("returning left and right children")
             return child_left, child_right
         elif self.extend:
-            child_extension= {'transform' : self.child_extension.transform,
-                              'classifier': self.child_extension.classifier,
-                              'router': self.child_extension.router}
+            child_extension = {'transform': self.child_extension.transform,
+                               'classifier': self.child_extension.classifier,
+                               'router': self.child_extension.router}
             print("returning an extended child")
             return child_extension
 
@@ -470,7 +471,7 @@ class Tree(nn.Module):
 # ############################ Building blocks  ##############################
 # ########################### (1) Transformers ###############################
 class Identity(nn.Module):
-    def __init__(self,input_nc, input_width, input_height, **kwargs):
+    def __init__(self, input_nc, input_width, input_height, **kwargs):
         super(Identity, self).__init__()
         self.outputshape = (1, input_nc, input_width, input_height)
 
@@ -480,7 +481,8 @@ class Identity(nn.Module):
 
 class JustConv(nn.Module):
     """ 1 convolution """
-    def __init__(self, input_nc, input_width, input_height, 
+
+    def __init__(self, input_nc, input_width, input_height,
                  ngf=6, kernel_size=5, stride=1, **kwargs):
         super(JustConv, self).__init__()
 
@@ -491,7 +493,7 @@ class JustConv(nn.Module):
         self.conv1 = nn.Conv2d(input_nc, ngf, kernel_size, stride=stride)
         self.outputshape = self.get_outputshape(input_nc, input_width, input_height)
 
-    def get_outputshape(self, input_nc, input_width, input_height ):
+    def get_outputshape(self, input_nc, input_width, input_height):
         """ Run a single forward pass through the transformer to get the 
         output size
         """
@@ -508,7 +510,8 @@ class JustConv(nn.Module):
 
 class ConvPool(nn.Module):
     """ 1 convolution + 1 max pooling """
-    def __init__(self, input_nc, input_width, input_height, 
+
+    def __init__(self, input_nc, input_width, input_height,
                  ngf=6, kernel_size=5, downsample=True, **kwargs):
         super(ConvPool, self).__init__()
         self.downsample = downsample
@@ -521,7 +524,7 @@ class ConvPool(nn.Module):
         self.conv1 = nn.Conv2d(input_nc, ngf, kernel_size)
         self.outputshape = self.get_outputshape(input_nc, input_width, input_height)
 
-    def get_outputshape(self, input_nc, input_width, input_height ):
+    def get_outputshape(self, input_nc, input_width, input_height):
         """ Run a single forward pass through the transformer to get the 
         output size
         """
@@ -544,7 +547,8 @@ class ResidualTransformer(nn.Module):
     Got the base codes from
     https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
     """
-    def __init__(self, input_nc, input_width, input_height, 
+
+    def __init__(self, input_nc, input_width, input_height,
                  ngf=6, stride=1, **kwargs):
         super(ResidualTransformer, self).__init__()
         self.conv1 = nn.Conv2d(input_nc, ngf, kernel_size=1, bias=False)
@@ -555,8 +559,8 @@ class ResidualTransformer(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.stride = stride
         self.outputshape = self.get_outputshape(input_nc, input_width, input_height)
-        
-    def get_outputshape(self, input_nc, input_width, input_height ):
+
+    def get_outputshape(self, input_nc, input_width, input_height):
         """ Run a single forward pass through the transformer to get the 
         output size
         """
@@ -582,14 +586,15 @@ class ResidualTransformer(nn.Module):
 
 class VGG13ConvPool(nn.Module):
     """ n convolution + 1 max pooling """
-    def __init__(self, input_nc, input_width, input_height, 
+
+    def __init__(self, input_nc, input_width, input_height,
                  ngf=64, kernel_size=3, batch_norm=True, downsample=True,
                  **kwargs):
         super(VGG13ConvPool, self).__init__()
-        self.downsample = downsample        
+        self.downsample = downsample
         self.batch_norm = batch_norm
         self.conv1 = nn.Conv2d(
-            input_nc, ngf, kernel_size=kernel_size, padding=(kernel_size-1)/2,
+            input_nc, ngf, kernel_size=kernel_size, padding=(kernel_size - 1) / 2,
         )
         self.conv2 = nn.Conv2d(ngf, ngf, kernel_size=kernel_size, padding=1)
         self.relu = nn.ReLU(inplace=True)
@@ -602,7 +607,7 @@ class VGG13ConvPool(nn.Module):
 
         self.outputshape = self.get_outputshape(input_nc, input_width, input_height)
 
-    def get_outputshape(self, input_nc, input_width, input_height ):
+    def get_outputshape(self, input_nc, input_width, input_height):
         """ Run a single forward pass through the transformer to get the 
         output size
         """
@@ -619,7 +624,7 @@ class VGG13ConvPool(nn.Module):
         else:
             out = self.relu(self.conv1(x))
             out = self.relu(self.conv2(out))
-        
+
         if self.downsample:
             return F.max_pool2d(out, 2)
         else:
@@ -629,23 +634,25 @@ class VGG13ConvPool(nn.Module):
 # ########################### (2) Routers ##################################
 class One(nn.Module):
     """Route all data points to the left branch branch """
+
     def __init__(self):
         super(One, self).__init__()
-        
+
     def forward(self, x):
         return 1.0
 
 
 class Router(nn.Module):
     """Convolution + Relu + Global Average Pooling + Sigmoid"""
-    def __init__(self, input_nc,  input_width, input_height,
+
+    def __init__(self, input_nc, input_width, input_height,
                  kernel_size=28,
                  soft_decision=True,
                  stochastic=False,
                  **kwargs):
         super(Router, self).__init__()
         self.soft_decision = soft_decision
-        self.stochastic=stochastic
+        self.stochastic = stochastic
 
         if max(input_width, input_height) < kernel_size:
             warnings.warn('Router kernel too large, shrink it')
@@ -663,7 +670,7 @@ class Router(nn.Module):
         # get probability of "left" or "right"
         x = self.output_controller(x)
         return x
-                
+
     def output_controller(self, x):
         # soft decision
         if self.soft_decision:
@@ -681,7 +688,7 @@ class Router(nn.Module):
 class RouterGAP(nn.Module):
     """ Convolution + Relu + Global Average Pooling + FC + Sigmoid """
 
-    def __init__(self, input_nc, input_width, input_height, 
+    def __init__(self, input_nc, input_width, input_height,
                  ngf=5,
                  kernel_size=7,
                  soft_decision=True,
@@ -728,7 +735,7 @@ class RouterGAP(nn.Module):
 class RouterGAPwithDoubleConv(nn.Module):
     """ 2 x (Convolution + Relu) + Global Average Pooling + FC + Sigmoid """
 
-    def __init__(self, input_nc, input_width, input_height, 
+    def __init__(self, input_nc, input_width, input_height,
                  ngf=32,
                  kernel_size=3,
                  soft_decision=True,
@@ -743,10 +750,10 @@ class RouterGAPwithDoubleConv(nn.Module):
         if max(input_width, input_height) < kernel_size:
             warnings.warn('Router kernel too large, shrink it')
             kernel_size = max(input_width, input_height)
-            if max(input_width, input_height)%2 ==0:
+            if max(input_width, input_height) % 2 == 0:
                 kernel_size += 1
- 
-        padding = (kernel_size-1)/2 
+
+        padding = (kernel_size - 1) / 2
         self.conv1 = nn.Conv2d(input_nc, ngf, kernel_size=kernel_size, padding=padding)
         self.conv2 = nn.Conv2d(ngf, ngf, kernel_size=kernel_size, padding=padding)
         self.relu = nn.ReLU(inplace=True)
@@ -780,7 +787,8 @@ class RouterGAPwithDoubleConv(nn.Module):
 
 class Router_MLP_h1(nn.Module):
     """  MLP with 1 hidden layer """
-    def __init__(self, input_nc,  input_width, input_height,
+
+    def __init__(self, input_nc, input_width, input_height,
                  kernel_size=28,
                  soft_decision=True,
                  stochastic=False,
@@ -788,10 +796,10 @@ class Router_MLP_h1(nn.Module):
                  **kwargs):
         super(Router_MLP_h1, self).__init__()
         self.soft_decision = soft_decision
-        self.stochastic=stochastic
+        self.stochastic = stochastic
 
-        width = input_nc*input_width*input_height
-        self.fc1 = nn.Linear(width, width/reduction_rate + 1)
+        width = input_nc * input_width * input_height
+        self.fc1 = nn.Linear(width, width / reduction_rate + 1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -801,7 +809,7 @@ class Router_MLP_h1(nn.Module):
         # get probability of "left" or "right"
         x = self.output_controller(x)
         return x
-                
+
     def output_controller(self, x):
         # soft decision
         if self.soft_decision:
@@ -820,20 +828,21 @@ class RouterGAP_TwoFClayers(nn.Module):
     """ Routing function:
     GAP + fc1 + fc2 
     """
-    def __init__(self, input_nc,  input_width, input_height,
+
+    def __init__(self, input_nc, input_width, input_height,
                  kernel_size=28,
                  soft_decision=True,
                  stochastic=False,
-                 reduction_rate = 2,
+                 reduction_rate=2,
                  dropout_prob=0.0,
                  **kwargs):
         super(RouterGAP_TwoFClayers, self).__init__()
         self.soft_decision = soft_decision
-        self.stochastic=stochastic
+        self.stochastic = stochastic
         self.dropout_prob = dropout_prob
-    
-        self.fc1 = nn.Linear(input_nc, input_nc/reduction_rate + 1)
-        self.fc2 = nn.Linear(input_nc/reduction_rate + 1, 1)
+
+        self.fc1 = nn.Linear(input_nc, input_nc / reduction_rate + 1)
+        self.fc2 = nn.Linear(input_nc / reduction_rate + 1, 1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -846,7 +855,7 @@ class RouterGAP_TwoFClayers(nn.Module):
         # get probability of "left" or "right"
         x = self.output_controller(x)
         return x
-                
+
     def output_controller(self, x):
         # soft decision
         if self.soft_decision:
@@ -865,18 +874,19 @@ class RouterGAPwithConv_TwoFClayers(nn.Module):
     """ Routing function:
     Conv2D + GAP + fc1 + fc2 
     """
-    def __init__(self, input_nc,  input_width, input_height,
+
+    def __init__(self, input_nc, input_width, input_height,
                  ngf=10,
                  kernel_size=3,
                  soft_decision=True,
                  stochastic=False,
-                 reduction_rate = 2,
+                 reduction_rate=2,
                  dropout_prob=0.0,
                  **kwargs):
         super(RouterGAPwithConv_TwoFClayers, self).__init__()
         self.ngf = ngf
         self.soft_decision = soft_decision
-        self.stochastic=stochastic
+        self.stochastic = stochastic
         self.dropout_prob = dropout_prob
 
         if max(input_width, input_height) < kernel_size:
@@ -884,8 +894,8 @@ class RouterGAPwithConv_TwoFClayers(nn.Module):
             kernel_size = max(input_width, input_height)
 
         self.conv1 = nn.Conv2d(input_nc, ngf, kernel_size=kernel_size)
-        self.fc1 = nn.Linear(ngf, ngf/reduction_rate + 1)
-        self.fc2 = nn.Linear(ngf/reduction_rate + 1, 1)
+        self.fc1 = nn.Linear(ngf, ngf / reduction_rate + 1)
+        self.fc2 = nn.Linear(ngf / reduction_rate + 1, 1)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -900,7 +910,7 @@ class RouterGAPwithConv_TwoFClayers(nn.Module):
         # get probability of "left" or "right"
         x = self.output_controller(x)
         return x
-                
+
     def output_controller(self, x):
         # soft decision
         if self.soft_decision:
@@ -919,22 +929,24 @@ class RouterGAPwithConv_TwoFClayers(nn.Module):
 class LR(nn.Module):
     """ Logistinc regression
     """
+
     def __init__(self, input_nc, input_width, input_height, no_classes=10, **kwargs):
         super(LR, self).__init__()
-        self.fc = nn.Linear(input_nc*input_width*input_height, no_classes)
+        self.fc = nn.Linear(input_nc * input_width * input_height, no_classes)
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        return F.log_softmax(self.fc(x))
+        return F.log_softmax(self.fc(x), dim=1)
 
 
 class MLP_LeNet(nn.Module):
     """ The last fully-connected part of LeNet
     """
+
     def __init__(self, input_nc, input_width, input_height, no_classes=10, **kwargs):
         super(MLP_LeNet, self).__init__()
-        assert input_nc*input_width*input_height > 120
-        self.fc1 = nn.Linear(input_nc*input_width*input_height, 120)
+        assert input_nc * input_width * input_height > 120
+        self.fc1 = nn.Linear(input_nc * input_width * input_height, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, no_classes)
 
@@ -943,38 +955,40 @@ class MLP_LeNet(nn.Module):
         out = F.relu(self.fc1(out))
         out = F.relu(self.fc2(out))
         out = self.fc3(out)
-        return F.log_softmax(out)
+        return F.log_softmax(out, dim=1)
 
 
 class MLP_LeNetMNIST(nn.Module):
     """ The last fully connected part of LeNet MNIST:
     https://github.com/BVLC/caffe/blob/master/examples/mnist/lenet.prototxt
     """
+
     def __init__(self, input_nc, input_width, input_height, dropout_prob=0.0, **kwargs):
         super(MLP_LeNetMNIST, self).__init__()
         self.dropout_prob = dropout_prob
-        ngf = input_nc*input_width*input_height
-        self.fc1 = nn.Linear(ngf, int(round(ngf/1.6)))
-        self.fc2 = nn.Linear(int(round(ngf/1.6)), 10)
-       
+        ngf = input_nc * input_width * input_height
+        self.fc1 = nn.Linear(ngf, int(round(ngf / 1.6)))
+        self.fc2 = nn.Linear(int(round(ngf / 1.6)), 10)
+
     def forward(self, x):
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training, p=self.dropout_prob)
         x = self.fc2(x)
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=1)
 
 
 class Solver_GAP_TwoFClayers(nn.Module):
     """ GAP + fc1 + fc2 """
-    def __init__(self, input_nc, input_width, input_height, 
+
+    def __init__(self, input_nc, input_width, input_height,
                  dropout_prob=0.0, reduction_rate=2, **kwargs):
         super(Solver_GAP_TwoFClayers, self).__init__()
         self.dropout_prob = dropout_prob
         self.reduction_rate = reduction_rate
 
-        self.fc1 = nn.Linear(input_nc, int(input_nc/reduction_rate + 1))
-        self.fc2 = nn.Linear(int(input_nc/reduction_rate + 1), 10)
+        self.fc1 = nn.Linear(input_nc, int(input_nc / reduction_rate + 1))
+        self.fc2 = nn.Linear(int(input_nc / reduction_rate + 1), 10)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
@@ -984,31 +998,33 @@ class Solver_GAP_TwoFClayers(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training, p=self.dropout_prob)
         x = self.fc2(x).squeeze()
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=1)
 
 
 class MLP_AlexNet(nn.Module):
     """ The last fully connected part of LeNet MNIST:
     https://github.com/BVLC/caffe/blob/master/examples/mnist/lenet.prototxt
     """
+
     def __init__(self, input_nc, input_width, input_height, dropout_prob=0.0, **kwargs):
         super(MLP_AlexNet, self).__init__()
         self.dropout_prob = dropout_prob
         ngf = input_nc * input_width * input_height
         self.fc1 = nn.Linear(ngf, 128)
         self.fc2 = nn.Linear(128, 10)
-       
+
     def forward(self, x):
         x = x.view(x.size(0), -1)
         x = F.relu(self.fc1(x))
         x = F.dropout(x, training=self.training, p=self.dropout_prob)
         x = self.fc2(x)
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=1)
 
 
 class Solver_GAP_OneFClayers(nn.Module):
     """ GAP + fc1 """
-    def __init__(self, input_nc, input_width, input_height, 
+
+    def __init__(self, input_nc, input_width, input_height,
                  dropout_prob=0.0, reduction_rate=2, **kwargs):
         super(Solver_GAP_OneFClayers, self).__init__()
         self.dropout_prob = dropout_prob
@@ -1019,7 +1035,7 @@ class Solver_GAP_OneFClayers(nn.Module):
 
     def forward(self, x):
         # spatial averaging
-        x = x.mean(dim=-1).mean(dim=-1).squeeze()  
+        x = x.mean(dim=-1).mean(dim=-1).squeeze()
         x = F.dropout(x, training=self.training, p=self.dropout_prob)
         x = self.fc1(x)
-        return F.log_softmax(x)
+        return F.log_softmax(x, dim=1)

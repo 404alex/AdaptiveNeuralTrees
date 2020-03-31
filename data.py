@@ -9,6 +9,7 @@ from torch.utils import data as tu
 from torch._utils import _accumulate
 from torch import randperm
 from sklearn.preprocessing import normalize
+import torch.nn.functional as F
 
 
 
@@ -234,7 +235,7 @@ def get_dataloaders(
         data = np.load(filename, allow_pickle=True)
         datalen = len(data[0])
         X = data[:, 1:datalen - 2]
-        #X = normalize(X, axis=0)
+        X = normalize(X, axis=0)
         y = data[:, datalen - 1]
         re_X = []
         for item in X:
@@ -252,6 +253,7 @@ def get_dataloaders(
 
         tensor_x = torch.Tensor(re_X)
         tensor_y = torch.Tensor(re_y).long()
+        tensor_x = F.interpolate(tensor_x,size=40,mode='bilinear')
 
         all_dataset = tu.TensorDataset(tensor_x, tensor_y)
         total_num = len(y)
@@ -266,7 +268,6 @@ def get_dataloaders(
         train_loader = torch.utils.data.DataLoader(
             tran_set,
             batch_size=batch_size,
-
             sampler=ImbalancedDatasetSampler(tran_set),
             **kwargs)
         valid_loader = torch.utils.data.DataLoader(
@@ -354,7 +355,7 @@ def get_dataset_details(dataset):
             'benign_img', 'malicious_img'
         )
     elif dataset == 'batadal':
-        input_nc, input_width, input_height = 1, 7, 7
+        input_nc, input_width, input_height = 1, 40, 40
         classes = (
             'Normal', 'Attack'
         )

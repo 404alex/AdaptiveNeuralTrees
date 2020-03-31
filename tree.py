@@ -180,12 +180,13 @@ def valid(model, data_loader, node_idx, struct):
     for data, target in data_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
+        with torch.no_grad():
+            data, target = Variable(data), Variable(target)
         output = model(data)
 
         # sum up batch loss
         valid_epoch_loss += F.nll_loss(
-            output, target, size_average=False,
+            output, target, reduction='sum',
         ).item()
 
         pred = output.data.max(1, keepdim=True)[1]
@@ -262,12 +263,14 @@ def test(model, data_loader):
     test_loss = 0
     correct = 0
     conf_matrix = torch.zeros(len(args.classes), len(args.classes))
+
     for data, target in data_loader:
         if args.cuda:
             data, target = data.cuda(), target.cuda()
-        data, target = Variable(data, volatile=True), Variable(target)
+        with torch.no_grad():
+            data, target = Variable(data), Variable(target)
         output = model(data)
-        test_loss += F.nll_loss(output, target, size_average=False).item()
+        test_loss += F.nll_loss(output, target, reduction='sum').item()
         pred = output.data.max(1, keepdim=True)[1]
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
