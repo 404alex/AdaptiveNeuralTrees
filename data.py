@@ -10,6 +10,7 @@ from torch._utils import _accumulate
 from torch import randperm
 from sklearn.preprocessing import normalize
 from helper import Subset
+import torch.nn.functional as F
 
 
 
@@ -252,6 +253,7 @@ def get_dataloaders(
             re_y.append(temp)
 
         tensor_x = torch.Tensor(re_X)
+        tensor_x = F.upsample(tensor_x, size=28)
         tensor_y = torch.Tensor(re_y).long()
 
         all_dataset = tu.TensorDataset(tensor_x, tensor_y)
@@ -354,7 +356,7 @@ def get_dataset_details(dataset):
             'benign_img', 'malicious_img'
         )
     elif dataset == 'batadal':
-        input_nc, input_width, input_height = 1, 7, 7
+        input_nc, input_width, input_height = 1, 28, 28
         classes = (
             'Normal', 'Attack'
         )
