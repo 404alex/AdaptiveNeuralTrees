@@ -256,9 +256,9 @@ def get_dataloaders(
 
         all_dataset = tu.TensorDataset(tensor_x, tensor_y)
         total_num = len(y)
-        val_num = int(round(total_num * 0.2))
-        train_num = total_num - val_num - 4000
-        tran_set, test_set, val_set = random_split(all_dataset, [train_num, 4000, val_num])
+        val_num = int(round(total_num * 0.1))
+        train_num = total_num - val_num - 2000
+        tran_set, test_set, val_set = random_split(all_dataset, [train_num, 2000, val_num])
 
 
         NUM_VALID = len(val_set)
@@ -277,7 +277,7 @@ def get_dataloaders(
             **kwargs)
         test_loader = torch.utils.data.DataLoader(
             test_set,
-            batch_size=4000,
+            batch_size=2000,
             shuffle=False,
             **kwargs)
 
