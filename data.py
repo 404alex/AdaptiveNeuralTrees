@@ -253,10 +253,10 @@ def get_dataloaders(
             re_y.append(temp)
 
         tensor_x = torch.Tensor(re_X)
-        tensor_x = F.upsample(tensor_x, size=28)
+        tensor_x = F.upsample(tensor_x, size=28, mode='bilinear')
         tensor_y = torch.Tensor(re_y).long()
 
-        all_dataset = tu.TensorDataset(tensor_x, tensor_y)
+        all_dataset = tu.TensorDataset(tensor_x.data, tensor_y)
         total_num = len(y)
         val_num = int(round(total_num * 0.1))
         train_num = total_num - val_num - 2000
