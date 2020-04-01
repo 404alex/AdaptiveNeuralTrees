@@ -13,7 +13,6 @@ from helper import Subset
 import torch.nn.functional as F
 
 
-
 def random_split(dataset, lengths):
     r"""
     Randomly split a dataset into non-overlapping new datasets of given lengths.
@@ -262,7 +261,6 @@ def get_dataloaders(
         train_num = total_num - val_num - 2000
         tran_set, test_set, val_set = random_split(all_dataset, [train_num, 2000, val_num])
 
-
         NUM_VALID = len(val_set)
         NUM_TRAIN = len(tran_set)
 
@@ -283,18 +281,20 @@ def get_dataloaders(
             shuffle=False,
             **kwargs)
 
-    elif dataset == 'wadi':
-        filename = '../data/ICS/WADI/Physical_WADI.npy'
+    elif dataset == 'swat':
+        filename = '../data/SWAT/Physical_SWAT_2019.npy'
         data = np.load(filename, allow_pickle=True)
         datalen = len(data[0])
-        X = data[:, 3:datalen - 2]
+        X = data[:, 1:datalen - 2]
+        X[X == 'Active'] = 1.0
+        X[X == 'Inactive'] = 0.0
         X = normalize(X, axis=0)
         y = data[:, datalen - 1]
         re_X = []
         for item in X:
-            z = np.zeros(22)
+            z = np.zeros(5)
             item = np.concatenate((item, z), axis=0)
-            temp = np.reshape(item, (1, 12, 12)).tolist()
+            temp = np.reshape(item, (1, 9, 9)).tolist()
             re_X.append(np.array(temp))
         re_y = []
         for item in y:
@@ -305,14 +305,14 @@ def get_dataloaders(
             re_y.append(temp)
 
         tensor_x = torch.Tensor(re_X)
+        tensor_x = F.upsample(tensor_x, size=54, mode='bilinear')
         tensor_y = torch.Tensor(re_y).long()
 
-        all_dataset = tu.TensorDataset(tensor_x, tensor_y)
+        all_dataset = tu.TensorDataset(tensor_x.data, tensor_y)
         total_num = len(y)
-        val_num = int(round(total_num * 0.2))
-        train_num = total_num - val_num - val_num
-        tran_set, test_set, val_set = random_split(all_dataset, [train_num, val_num, val_num])
-
+        val_num = int(round(total_num * 0.1))
+        train_num = total_num - val_num - 2000
+        tran_set, test_set, val_set = random_split(all_dataset, [train_num, 2000, val_num])
 
         NUM_VALID = len(val_set)
         NUM_TRAIN = len(tran_set)
@@ -329,11 +329,9 @@ def get_dataloaders(
             **kwargs)
         test_loader = torch.utils.data.DataLoader(
             test_set,
-            batch_size=val_num,
+            batch_size=2000,
             shuffle=False,
             **kwargs)
-
-
     else:
         raise NotImplementedError("Specified data set is not available.")
 
@@ -360,8 +358,8 @@ def get_dataset_details(dataset):
         classes = (
             'Normal', 'Attack'
         )
-    elif dataset == 'wadi':
-        input_nc, input_width, input_height = 1, 12, 12
+    elif dataset == 'swat':
+        input_nc, input_width, input_height = 1, 54, 54
         classes = (
             'Normal', 'Attack'
         )
