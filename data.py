@@ -205,6 +205,7 @@ def get_dataloaders(
         train_data = datasets.ImageFolder(root="../img", transform=transform_train)
         test_data = datasets.ImageFolder(root="../img", transform=transform_test)
         val_data = datasets.ImageFolder(root="../img", transform=transform_test)
+        unseen_data = datasets.ImageFolder(root="../img_test", transform=transform_test)
 
         TOTAL_NUM = 551
         NUM_VALID = 11
@@ -221,8 +222,8 @@ def get_dataloaders(
             sampler=ChunkSampler(NUM_VALID, NUM_TRAIN, shuffle=True),
             **kwargs)
         test_loader = torch.utils.data.DataLoader(
-            test_data,
-            batch_size=256,
+            unseen_data,
+            batch_size=51,
             shuffle=False,
             **kwargs)
 
